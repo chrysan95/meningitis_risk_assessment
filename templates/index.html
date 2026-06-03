@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meningitis Risk Assessment &middot; BINUS University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <!-- config for JS, sourced from the backend -->
+  <script id="app-config" type="application/json">
+    {{ {
+      "fields": fields,
+      "age": age_field,
+      "diagnosis_options": diagnosis_options,
+      "gender_options": gender_options,
+      "metrics": metrics,
+      "max_rows": max_rows,
+      "batch_columns": batch_columns
+    } | tojson }}
+  </script>
+
+  <!-- ===== Header ===== -->
+  <header class="app-header">
+    <div class="brand">
+      <img src="/static/logo-binus.svg" alt="BINUS University Logo" />
+      <div class="brand-divider"></div>
+      <h1 class="app-title">Meningitis Risk Assessment</h1>
+    </div>
+
+    <div class="model-badge">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#2f4a5a" stroke-width="1.6">
+        <path d="M9 3a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8A3 3 0 0 0 7 17a3 3 0 0 0 5 1 3 3 0 0 0 5-1 3 3 0 0 0 2-5.2A3 3 0 0 0 18 6a3 3 0 0 0-3-3 3 3 0 0 0-3 1 3 3 0 0 0-3-1Z"/>
+        <circle cx="20" cy="20" r="3"/><path d="m22.2 22.2 1.6 1.6"/>
+      </svg>
+      <span>Model: <strong>Cost-Sensitive Random Forest</strong> &middot; Score {{ "%.2f"|format(metrics.custom_score) }}/100</span>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- ===== Tab switch ===== -->
+    <div class="tabbar">
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" data-tab="single" role="tab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="2.4"/><path d="M8 17c.7-1.8 2.2-2.6 4-2.6s3.3.8 4 2.6"/></svg>
+          Single patient
+        </button>
+        <button class="tab" data-tab="batch" role="tab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 9h18M9 4v13"/><path d="m12 22 3-3-3-3M15 19H8"/></svg>
+          Batch upload
+        </button>
+      </div>
+      <p class="tab-caption">Enter patient clinical and laboratory values.</p>
+    </div>
+
+    <!-- ================= SINGLE PATIENT ================= -->
+    <section class="view view-single" data-view="single">
+      <div class="grid-two">
+        <!-- Input card -->
+        <div class="card">
+          <div class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><path d="M9 3v6l-4.5 8A2 2 0 0 0 6.3 20h11.4a2 2 0 0 0 1.8-3L15 9V3"/><path d="M8 3h8M8.5 13h7"/><circle cx="18" cy="6" r="3"/><path d="m20 8 1.5 1.5"/></svg>
+            <h2>Laboratory Data Input</h2>
+          </div>
+
+          <form id="single-form" class="card-body" novalidate>
+            <p class="section-label">Patient Demographics</p>
+            <div class="row row-demo">
+              <div class="field">
+                <label>Patient ID <span class="lab-unit">/ Record no.</span></label>
+                <input type="text" name="patient_id" placeholder="e.g. MR-2024031..." />
+              </div>
+              <div class="field field-age">
+                <label>Age <span class="lab-unit">years</span></label>
+                <input type="number" name="age" placeholder="e.g. 34" min="0" max="120" />
+                <span class="field-hint" data-hint-for="age">Ref: 0&ndash;120</span>
+              </div>
+              <div class="field">
+                <label>Gender</label>
+                <div class="toggle" data-toggle="gender">
+                  <button type="button" class="toggle-btn is-active" data-value="Male">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="14" r="5"/><path d="m14 10 5-5m0 0h-4m4 0v4"/></svg>
+                    Male
+                  </button>
+                  <button type="button" class="toggle-btn" data-value="Female">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="5"/><path d="M12 14v7m-3-3h6"/></svg>
+                    Female
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p class="section-label">Complete Blood Count</p>
+            <div class="row row-three">
+              {% for f in fields if f.section == 'cbc' %}
+              <div class="field">
+                <label>{{ f.label }} <span class="lab-unit">{{ f.unit }}</span></label>
+                <input type="number" name="{{ f.key }}" placeholder="e.g. {{ f.placeholder }}" step="any" />
+                <span class="field-hint" data-hint-for="{{ f.key }}">{{ f.hint }}</span>
+              </div>
+              {% endfor %}
+            </div>
+
+            <p class="section-label">CSF / Biochemistry Markers</p>
+            <div class="row row-two">
+              {% for f in fields if f.section == 'csf' %}
+              <div class="field">
+                <label>{{ f.label }} <span class="lab-unit">{{ f.unit }}</span></label>
+                <input type="number" name="{{ f.key }}" placeholder="e.g. {{ f.placeholder }}" step="any" />
+                <span class="field-hint" data-hint-for="{{ f.key }}">{{ f.hint }}</span>
+              </div>
+              {% endfor %}
+            </div>
+
+            <p class="section-label">Diagnosis &amp; Pathogen</p>
+            <div class="row row-two">
+              <div class="field">
+                <label>Pathogen present</label>
+                <div class="toggle" data-toggle="pathogen_present">
+                  <button type="button" class="toggle-btn" data-value="Yes">Yes</button>
+                  <button type="button" class="toggle-btn" data-value="No">No</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>Meningitis Type</label>
+                <div class="select-wrap">
+                  <select name="diagnosis">
+                    <option value="">select type</option>
+                    {% for d in diagnosis_options %}
+                    <option value="{{ d }}">{{ d }}</option>
+                    {% endfor %}
+                  </select>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#93a3ab" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-hint">Used as a feature, not indicator.</span>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" id="single-run">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3M7 11h1.5l1.5-3 2 6 1.5-3H15"/></svg>
+                Run risk prediction
+              </button>
+              <button type="button" class="btn btn-ghost" id="single-clear">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7"/></svg>
+                Clear
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Result card -->
+        <div class="card" id="single-result-card">
+          <div class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11h8M8 15h5"/></svg>
+            <h2>Prediction Result</h2>
+          </div>
+          <div class="card-body" id="single-result-body">
+            <!-- empty state -->
+            <div class="empty-state" id="single-empty">
+              <svg viewBox="0 0 24 24" width="58" height="58" fill="none" stroke="#9fc3c0" stroke-width="1.5"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M6 3H4m12 0h2M11 19a4 4 0 0 0 8 0v-3"/><circle cx="19" cy="13" r="2.5"/></svg>
+              <p class="empty-title">Enter all lab values and click predict</p>
+              <p class="empty-sub">Results include risk level, model confidence, class probabilities and AI-generated clinical insights.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= BATCH UPLOAD ================= -->
+    <section class="view view-batch is-hidden" data-view="batch">
+      <!-- INPUT STATE -->
+      <div class="grid-two" id="batch-input-state">
+        <div class="card">
+          <div class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><path d="M9 3v6l-4.5 8A2 2 0 0 0 6.3 20h11.4a2 2 0 0 0 1.8-3L15 9V3"/><path d="M8 3h8M8.5 13h7"/><circle cx="18" cy="6" r="3"/></svg>
+            <h2>Laboratory Data Input</h2>
+          </div>
+          <div class="card-body">
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="csv-input" accept=".csv" hidden />
+              <svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="#2f4a5a" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/></svg>
+              <p class="drop-title">Drop your CSV file here</p>
+              <p class="drop-sub">or click to browse files</p>
+              <button type="button" class="link-btn" id="download-template">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+                Download CSV template
+              </button>
+            </label>
+
+            <p class="reqs-label">CSV Requirements</p>
+            <ul class="reqs">
+              <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4fc4a3" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> Max {{ max_rows }} rows per upload</li>
+              <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4fc4a3" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> Required columns: {{ batch_columns | join(', ') }}</li>
+              <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4fc4a3" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> Rows with missing or invalid values are flagged, not dropped</li>
+            </ul>
+
+            <p class="file-chosen is-hidden" id="file-chosen"></p>
+
+            <div class="actions">
+              <button type="button" class="btn btn-primary" id="batch-run" disabled>
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3M7 11h1.5l1.5-3 2 6 1.5-3H15"/></svg>
+                Run risk prediction
+              </button>
+              <button type="button" class="btn btn-ghost" id="batch-clear">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7"/></svg>
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9z"/></svg>
+            <h2>Prediction Result</h2>
+          </div>
+          <div class="card-body">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" width="58" height="58" fill="none" stroke="#9fc3c0" stroke-width="1.5"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M6 3H4m12 0h2M11 19a4 4 0 0 0 8 0v-3"/><circle cx="19" cy="13" r="2.5"/></svg>
+              <p class="empty-title">Enter all lab values and click predict</p>
+              <p class="empty-sub">Results will be exported as downloadable CSV with risk level, confidence, and high-risk flags.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS STATE -->
+      <div class="batch-results is-hidden" id="batch-results-state">
+        <div class="card">
+          <div class="card-head card-head-split">
+            <div class="card-head-left">
+              <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><path d="M9 3v6l-4.5 8A2 2 0 0 0 6.3 20h11.4a2 2 0 0 0 1.8-3L15 9V3"/><path d="M8 3h8"/></svg>
+              <h2>Laboratory Data Input</h2>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="new-upload">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0L8 8m4-4 4 4M4 14v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/></svg>
+              New upload
+            </button>
+          </div>
+          <div class="file-row">
+            <span class="file-row-label">FILE</span>
+            <span class="file-row-name" id="result-filename"></span>
+            <span class="file-row-stats" id="result-stats"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head card-head-split">
+            <div class="card-head-left">
+              <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2f4a5a" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9z"/></svg>
+              <h2>Prediction Result</h2>
+            </div>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#93a3ab" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+              <input type="text" id="patient-search" placeholder="Search patient ID" />
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="summary-block">
+              <div class="stat-cards" id="stat-cards"></div>
+              <div class="donut-block">
+                <svg class="donut" viewBox="0 0 42 42" id="donut"></svg>
+                <div class="donut-legend" id="donut-legend"></div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="result-table">
+                <thead>
+                  <tr><th>Patient ID</th><th>Age</th><th>Gender</th><th>Result</th><th class="th-conf">Confidence</th><th></th></tr>
+                </thead>
+                <tbody id="result-tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="table-foot">
+              <span id="showing-label"></span>
+              <div class="pagination" id="pagination"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="batch-summary-card">
+          <div class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#4d97c4" stroke-width="1.6"><path d="M9 3v6l-4.5 8A2 2 0 0 0 6.3 20h11.4a2 2 0 0 0 1.8-3L15 9V3M8 3h8"/></svg>
+            <h2 class="summary">AI Summary</h2>
+          </div>
+          <div class="card-body" id="batch-summary-body">
+            <div class="summary-loading" id="batch-summary-loading">
+              <span class="spinner"></span>
+              <span>Generating AI summary from aggregate results&hellip;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="batch-footer">
+          <button type="button" class="btn btn-ghost btn-export" id="batch-export">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+            Export result
+          </button>
+          <div class="disclaimer">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#efa85f" stroke-width="1.8"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v5M12 18h.01"/></svg>
+            <span><strong>For research and decision support only.</strong> Does not replace clinical diagnosis.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
