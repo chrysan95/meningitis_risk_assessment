@@ -305,9 +305,9 @@ function setFile(file) {
     return;
   }
   chosenFile = file;
-  const fc = $("#file-chosen");
-  fc.textContent = `Selected: ${file.name}`;
-  fc.classList.remove("is-hidden");
+  $("#dz-filename").textContent = file.name;
+  $("#dz-default").classList.add("is-hidden");
+  $("#dz-filled").classList.remove("is-hidden");
   $("#batch-run").disabled = false;
 }
 
@@ -318,7 +318,8 @@ function resetBatch() {
   chosenFile = null;
   batchData = null;
   csvInput.value = "";
-  $("#file-chosen").classList.add("is-hidden");
+  $("#dz-filled").classList.add("is-hidden");
+  $("#dz-default").classList.remove("is-hidden");
   $("#batch-run").disabled = true;
   $("#batch-input-state").classList.remove("is-hidden");
   $("#batch-results-state").classList.add("is-hidden");

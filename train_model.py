@@ -31,7 +31,6 @@ COST_MATRIX = np.array(
 
 
 def build_features(data: pd.DataFrame) -> pd.DataFrame:
-    """Apply the exact same preprocessing pipeline as the notebook."""
     x = data[
         [
             "Age",
@@ -84,7 +83,7 @@ def main() -> None:
 
     # Cost-sensitive prediction on the held-out test set
     probs = model.predict_proba(X_test)
-    expected_costs = probs @ COST_MATRIX.T
+    expected_costs = probs @ COST_MATRIX
     y_pred = np.argmin(expected_costs, axis=1)
 
     rec = recall_score(y_test, y_pred, average="macro")

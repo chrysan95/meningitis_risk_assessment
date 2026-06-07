@@ -684,11 +684,31 @@ body {
   margin-top: 1px;
 }
 
-.file-chosen {
-  margin-top: 18px;
-  font-size: .95rem;
+.dz-default {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dz-filled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.dz-filled .dz-file-icon {
+  margin-bottom: 0;
+}
+
+.dz-filename {
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--ink);
-  font-weight: 600;
+  text-align: center;
+  word-break: break-all;
 }
 
 /* batch results */

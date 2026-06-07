@@ -24,7 +24,7 @@ A clinical decision-support web tool that stratifies meningitis risk
 ## Project layout
 
 ```
-meningitis_app/
+meningitis_risk_assessment/
 ├── app.py              # Flask server + validation + prediction endpoints
 ├── train_model.py      # rebuilds the RF model -> model/model.pkl
 ├── insights.py         # risk knowledge base + Gemini integration (+ fallback)
@@ -40,14 +40,26 @@ meningitis_app/
 ## Setup
 
 ```bash
-cd meningitis_app
-python -m venv venv && source venv/bin/activate
+cd meningitis_risk_assessment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# If powershell blocks?
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install needed dependencies in virtual environment
 pip install -r requirements.txt
 
-# 1. train / rebuild the model bundle (only needed once)
+# Train/rebuild the model bundle (only needed once)
 python train_model.py
 
-# 2. run the server
+# Put API key
+$env:GEMINI_API_KEY = "_"
+
+# RUN
 python app.py
 ```
 
